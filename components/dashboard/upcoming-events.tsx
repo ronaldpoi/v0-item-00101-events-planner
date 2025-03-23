@@ -51,7 +51,7 @@ export function UpcomingEvents() {
               </div>
               <div className="space-y-1 flex-1">
                 <h4 className="font-semibold">{event.title}</h4>
-                <div className="flex flex-col sm:flex-row sm:items-center text-sm text-muted-foreground gap-1 sm:gap-3">
+                <div className="flex flex-col text-sm text-muted-foreground gap-1 sm:gap-3">
                   <div className="flex items-center">
                     <Clock className="mr-1 h-3 w-3" />
                     {event.date} at {event.time}

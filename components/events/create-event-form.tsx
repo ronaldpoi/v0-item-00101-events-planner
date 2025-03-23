@@ -357,10 +357,10 @@ export function CreateEventForm() {
                     <AlertCircle className="h-4 w-4" />
                     <h3 className="font-medium">Required Fields Missing</h3>
                   </div>
-                  <ul className="text-sm space-y-1">
+                  <ul className="text-sm space-y-2">
                     {Object.entries(form.formState.errors).map(([field, error]) => (
-                      <li key={field} className="flex items-center gap-2">
-                        <span className="font-medium">{field}:</span>
+                      <li key={field} className="flex flex-col md:flex-row md:items-center md:gap-2">
+                        <span className="font-medium capitalize">{field}:</span>
                         <span>{error.message}</span>
                       </li>
                     ))}

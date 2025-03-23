@@ -1,13 +1,14 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, use } from "react"
 import { useRouter } from "next/navigation"
 import { EditEventForm } from "@/components/events/edit-event-form"
 import { AuthGuard } from "@/components/auth/auth-guard"
 import { useAuth } from "@/lib/auth-context"
 import { getEventById } from "@/lib/local-storage"
 
-export default function EditEventPage({ params }: { params: { id: string } }) {
+export default function EditEventPage({ params }: { params: Promise<{ id: string }> }) {
+  const resolvedParams = use(params)
   const router = useRouter()
   const { user } = useAuth()
   const [isOwner, setIsOwner] = useState(false)
@@ -15,7 +16,7 @@ export default function EditEventPage({ params }: { params: { id: string } }) {
 
   useEffect(() => {
     if (user) {
-      const event = getEventById(params.id)
+      const event = getEventById(resolvedParams.id)
       if (event) {
         setIsOwner(event.createdBy === user.id)
       } else {
@@ -24,7 +25,7 @@ export default function EditEventPage({ params }: { params: { id: string } }) {
       }
     }
     setIsLoading(false)
-  }, [user, params.id, router])
+  }, [user, resolvedParams.id, router])
 
   if (isLoading) {
     return (
@@ -53,7 +54,7 @@ export default function EditEventPage({ params }: { params: { id: string } }) {
             <h1 className="text-2xl font-bold tracking-tight">Edit Event</h1>
             <p className="text-muted-foreground">Update your event details below.</p>
           </div>
-          <EditEventForm id={params.id} />
+          <EditEventForm id={resolvedParams.id} />
         </div>
       </div>
     </AuthGuard>

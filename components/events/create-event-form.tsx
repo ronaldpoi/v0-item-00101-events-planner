@@ -6,7 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
 import { format } from "date-fns"
-import { CalendarIcon } from "lucide-react"
+import { CalendarIcon, AlertCircle } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
@@ -21,6 +21,8 @@ import { Switch } from "@/components/ui/switch"
 import { useAuth } from "@/lib/auth-context"
 import { createEvent } from "@/lib/local-storage"
 import { useToast } from "@/hooks/use-toast"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { Badge } from "@/components/ui/badge"
 
 // Form schema
 const formSchema = z.object({
@@ -60,7 +62,35 @@ export function CreateEventForm() {
       maxGuests: "",
       isPublic: false,
     },
+    mode: "onChange", // Enable real-time validation
   })
+
+  // Get form errors by tab
+  const getTabErrors = (tab: string) => {
+    const errors = form.formState.errors
+    switch (tab) {
+      case "details":
+        return Object.keys(errors).filter(key => ["title", "date", "startTime"].includes(key))
+      case "venue":
+        return Object.keys(errors).filter(key => ["location"].includes(key))
+      default:
+        return []
+    }
+  }
+
+  // Handle tab change with validation
+  const handleTabChange = (value: string) => {
+    const currentTabErrors = getTabErrors(activeTab)
+    if (currentTabErrors.length > 0) {
+      toast({
+        title: "Validation Error",
+        description: "Please fix the errors in the current tab before switching.",
+        variant: "destructive",
+      })
+      return
+    }
+    setActiveTab(value)
+  }
 
   // Form submission handler
   function onSubmit(values: z.infer<typeof formSchema>) {
@@ -107,10 +137,24 @@ export function CreateEventForm() {
     <div className="w-full">
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-          <Tabs defaultValue="details" className="w-full" onValueChange={setActiveTab}>
+          <Tabs defaultValue="details" className="w-full" onValueChange={handleTabChange}>
             <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="details">Event Details</TabsTrigger>
-              <TabsTrigger value="venue">Venue & Budget</TabsTrigger>
+              <TabsTrigger value="details" className="relative">
+                Event Details
+                {getTabErrors("details").length > 0 && (
+                  <Badge variant="destructive" className="absolute -top-2 -right-2 h-5 w-5 p-0 flex items-center justify-center">
+                    {getTabErrors("details").length}
+                  </Badge>
+                )}
+              </TabsTrigger>
+              <TabsTrigger value="venue" className="relative">
+                Venue & Budget
+                {getTabErrors("venue").length > 0 && (
+                  <Badge variant="destructive" className="absolute -top-2 -right-2 h-5 w-5 p-0 flex items-center justify-center">
+                    {getTabErrors("venue").length}
+                  </Badge>
+                )}
+              </TabsTrigger>
               <TabsTrigger value="guests">Guest List</TabsTrigger>
             </TabsList>
 
@@ -304,11 +348,51 @@ export function CreateEventForm() {
             </div>
           </Tabs>
 
-          <div className="flex justify-between">
-            <Button type="button" variant="outline" onClick={() => router.push("/events")}>
-              Cancel
-            </Button>
-            <Button type="submit">Create Event</Button>
+          <div className="flex flex-col gap-4">
+            {/* Validation Summary */}
+            {Object.keys(form.formState.errors).length > 0 && (
+              <Card className="border-destructive">
+                <CardContent className="pt-6">
+                  <div className="flex items-center gap-2 text-destructive mb-2">
+                    <AlertCircle className="h-4 w-4" />
+                    <h3 className="font-medium">Required Fields Missing</h3>
+                  </div>
+                  <ul className="text-sm space-y-1">
+                    {Object.entries(form.formState.errors).map(([field, error]) => (
+                      <li key={field} className="flex items-center gap-2">
+                        <span className="font-medium">{field}:</span>
+                        <span>{error.message}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </CardContent>
+              </Card>
+            )}
+
+            <div className="flex justify-between">
+              <Button type="button" variant="outline" onClick={() => router.push("/events")}>
+                Cancel
+              </Button>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div>
+                      <Button 
+                        type="submit" 
+                        disabled={Object.keys(form.formState.errors).length > 0}
+                      >
+                        Create Event
+                      </Button>
+                    </div>
+                  </TooltipTrigger>
+                  {Object.keys(form.formState.errors).length > 0 && (
+                    <TooltipContent>
+                      <p>Please fix all required fields before creating the event</p>
+                    </TooltipContent>
+                  )}
+                </Tooltip>
+              </TooltipProvider>
+            </div>
           </div>
         </form>
       </Form>

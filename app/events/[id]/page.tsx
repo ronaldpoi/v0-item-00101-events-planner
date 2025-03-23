@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, use } from "react"
 import { useRouter } from "next/navigation"
 import { EventDetails } from "@/components/events/event-details"
 import { GuestList } from "@/components/events/guest-list"
@@ -10,20 +10,21 @@ import { useAuth } from "@/lib/auth-context"
 import { getEventById } from "@/lib/local-storage"
 import { toast } from "@/components/ui/use-toast"
 
-export default function EventPage({ params }: { params: { id: string } }) {
+export default function EventPage({ params }: { params: Promise<{ id: string }> }) {
+  const resolvedParams = use(params)
   const router = useRouter()
   const { user } = useAuth()
   const [isOwner, setIsOwner] = useState(false)
 
   useEffect(() => {
     // Immediately redirect if the ID is "create"
-    if (params.id === "create") {
+    if (resolvedParams.id === "create") {
       router.push("/events/create/new")
       return
     }
 
     if (user) {
-      const event = getEventById(params.id)
+      const event = getEventById(resolvedParams.id)
       if (event) {
         setIsOwner(event.createdBy === user.id)
       } else {
@@ -36,13 +37,13 @@ export default function EventPage({ params }: { params: { id: string } }) {
         router.push("/events")
       }
     }
-  }, [user, params.id, router])
+  }, [user, resolvedParams.id, router])
 
   // For logged out users or non-owners viewing public events, only show event details
   if (!user || !isOwner) {
     return (
       <div className="container mx-auto px-4 py-6">
-        <EventDetails id={params.id} isOwner={isOwner} />
+        <EventDetails id={resolvedParams.id} isOwner={isOwner} />
       </div>
     )
   }
@@ -57,13 +58,13 @@ export default function EventPage({ params }: { params: { id: string } }) {
           <TabsTrigger value="budget">Budget</TabsTrigger>
         </TabsList>
         <TabsContent value="details">
-          <EventDetails id={params.id} isOwner={isOwner} />
+          <EventDetails id={resolvedParams.id} isOwner={isOwner} />
         </TabsContent>
         <TabsContent value="guests">
-          <GuestList id={params.id} />
+          <GuestList id={resolvedParams.id} />
         </TabsContent>
         <TabsContent value="budget">
-          <BudgetOverview id={params.id} />
+          <BudgetOverview id={resolvedParams.id} />
         </TabsContent>
       </Tabs>
     </div>
